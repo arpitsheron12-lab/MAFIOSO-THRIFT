@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAFIOSO THRIFTS — Himachal Inspired Streetwear & Upcycled Fashion</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              black: '#0a0a0a',
+              card: '#121212',
+              border: '#262626',
+              accent: '#f5f5f5',
+              muted: '#737373'
+            }
+          },
+          fontFamily: {
+            sans: ['Space Grotesk', 'Inter', 'sans-serif'],
+            serif: ['Cinzel', 'serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=JetBrains+Mono:wght@300;400;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- React & Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- EmailJS: sends order notification emails to the store owner, no backend needed -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0a0a0a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    /* Pahadi Geo-Border Motif CSS Pattern */
+    .pahadi-pattern {
+      background-image: repeating-linear-gradient(
+        45deg,
+        #1f1f1f 0,
+        #1f1f1f 2px,
+        transparent 0,
+        transparent 10px
+      );
+    }
+
+    .pahadi-border-top {
+      border-top: 2px dashed #333;
+    }
+
+    .noise-bg {
+      background-size: 100px 100px;
+      background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
+    }
+  </style>
+</head>
+<body class="bg-brand-black text-white font-sans antialiased selection:bg-white selection:text-black min-h-screen">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // =====================================================================
+    // STORE CONFIG — fill these in with your own details before going live.
+    // See the setup guide for exactly where to get each value.
+    // =====================================================================
+    const CONFIG = {
+      // Your real UPI ID (VPA) — customers pay directly to this, no gateway needed
+      upiId: "8894O84577@sbi",
+      // Name shown to the customer's UPI app when they pay
+      upiPayeeName: "Mafioso Thrifts",
+      // Password to unlock the admin "Edit Mode" — CHANGE THIS before deploying
+      adminPassword: "arpit1234",
+      // EmailJS credentials (free account at emailjs.com) — leave blank to disable email notifications
+      emailjs: {
+        publicKey: "rB1qMaGtUyMZvqXrw",
+        serviceId: "service_232jpio",
+        templateId: "template_npbyds8"
+      },
+      // Email address where you want to receive order notifications
+      ownerEmail: "arpitsheron12@gmail.com"
+    };
+
+    if (CONFIG.emailjs.publicKey) {
+      emailjs.init({ publicKey: CONFIG.emailjs.publicKey });
+    }
+
+    // Default Products (Initial Inventory curated for Himachal vibe)
+    const INITIAL_PRODUCTS = [
+      {
+        id: "mt-001",
+        name: "KASOL HEAVYWEIGHT VINTAGE FLANNEL",
+        category: "Outerwear",
+        price: 1890,
+        size: "L (Oversized)",
+        condition: "9.5/10 — Handpicked Vintage",
+        tag: "1-OF-1 RARE",
+        image: "https://images.unsplash.com/photo-1578932750294-f5075e85f44a?q=80&w=800&auto=format&fit=crop",
+        description: "Ultra-heavy cotton plaid flannel sourced during winter in Parvati Valley. Raw distressed hem, relaxed Drop-shoulder cut.",
+        cultureNote: "Inspired by the rugged warmth needed for chilly Kasol evenings."
+      },
+      {
+        id: "mt-002",
+        name: "PAHADI GEOMETRY UPCYCLED DENIM",
+        category: "Artistic Upcycled",
+        price: 2650,
+        size: "M / L",
+        condition: "Custom Hand-embroidered",
+        tag: "ARTIST SPECIAL",
+        image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=800&auto=format&fit=crop",
+        description: "Reconstructed vintage trucker denim featuring hand-stitched Himachal Kullu geometric line patterns on back panel.",
+        cultureNote: "Embroidered motif derived from traditional Kullu shawl borders."
+      },
+      {
+        id: "mt-003",
+        name: "DHARAMSHALA ACID WASH OVERSIZED HOODIE",
+        category: "Tops",
+        price: 2100,
+        size: "XL",
+        condition: "9/10 — Mint Condition",
+        tag: "MUST HAVE",
+        image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=800&auto=format&fit=crop",
+        description: "450 GSM French Terry cotton hoodie with custom sun-bleached grey patina. Boxy drape with deep double-lined hood.",
+        cultureNote: "Reflecting the misty, moody aesthetic of the Dhauladhar fog."
+      },
+      {
+        id: "mt-004",
+        name: "SPITI CANVAS UTILITY CARGO VEST",
+        category: "Outerwear",
+        price: 2290,
+        size: "Free Size",
+        condition: "10/10 — Upcycled Tactical",
+        tag: "UTILITY",
+        image: "https://images.unsplash.com/photo-1516257984-b1b4d707412e?q=80&w=800&auto=format&fit=crop",
+        description: "Multi-pocket tactical vest with custom screen-printed 'Mafioso Alpine' typography on chest pocket. Heavy brass zips.",
+        cultureNote: "Designed for mountain expeditions and high-altitude layering."
+      },
+      {
+        id: "mt-005",
+        name: "TRIUND MOUNTAIN GRAPHIC VINTAGE TEE",
+        category: "Tops",
+        price: 1190,
+        size: "L",
+        condition: "8.5/10 — Soft Faded Vintage",
+        tag: "BESTSELLER",
+        image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=800&auto=format&fit=crop",
+        description: "Single-stitch 90s vintage washed tee with custom minimalist line art of Himalayan ridgelines across the chest.",
+        cultureNote: "Hand-printed graphic inspired by the trek trail to Triund."
+      },
+      {
+        id: "mt-006",
+        name: "SHIMLA WOOLEN OVERSIZED TRENCH COAT",
+        category: "Outerwear",
+        price: 3400,
+        size: "L / XL",
+        condition: "9.8/10 — Archival Piece",
+        tag: "1-OF-1 ARCHIVE",
+        image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=800&auto=format&fit=crop",
+        description: "Heavyweight dark charcoal wool trench coat. Double-breasted layout with horn buttons and satin interior lining.",
+        cultureNote: "Colonial-era inspired silhouette blended with modern street drape."
+      }
+    ];
+
+    const INITIAL_BANNER = {
+      heroTitle: "RAW. UNCURATED. HIMACHAL STREETWEAR.",
+      heroSubtitle: "Hand-curated rare vintage, upcycled tactical utility, and graphic wear rooted in Himalayan underground culture.",
+      cultureStoryTitle: "THE MAFIOSO PHILOSOPHY — PARVATI VALLEY TO STREETS",
+      cultureStoryText: "Born in the high altitudes of Himachal Pradesh, Mafioso Thrifts is an artistic clothing collective managed by graphic designer Arpit. We hunt, upcycle, and re-imagine rare 1-of-1 garments. Every thread carries the soul of Himalayan mountain air mixed with sharp dark-mode streetwear aesthetics."
+    };
+
+    const INITIAL_SIZE_CHART = [
+      { size: "S", chest: '36 - 38"', length: '27"', shoulder: '18.5"', fit: "Standard Fit" },
+      { size: "M", chest: '40 - 42"', length: '28.5"', shoulder: '20"', fit: "Relaxed Boxy" },
+      { size: "L", chest: '44 - 46"', length: '30"', shoulder: '21.5"', fit: "Oversized Streetwear" },
+      { size: "XL", chest: '48 - 50"', length: '31.5"', shoulder: '23"', fit: "Drop Shoulder Extra Oversized" },
+      { size: "FREE SIZE", chest: 'Adjustable', length: 'Variable', shoulder: 'Universal', fit: "Unisex Layering Fit" },
+    ];
+
+    // Main React App Component
+    function App() {
+      // Local State
+      const [products, setProducts] = useState(() => {
+        const saved = localStorage.getItem('mt_products');
+        return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+      });
+
+      const [banner, setBanner] = useState(() => {
+        const saved = localStorage.getItem('mt_banner');
+        return saved ? JSON.parse(saved) : INITIAL_BANNER;
+      });
+
+      const [sizeChart, setSizeChart] = useState(() => {
+        const saved = localStorage.getItem('mt_size_chart');
+        return saved ? JSON.parse(saved) : INITIAL_SIZE_CHART;
+      });
+
+      const [cart, setCart] = useState(() => {
+        const saved = localStorage.getItem('mt_cart');
+        return saved ? JSON.parse(saved) : [];
+      });
+      const [selectedCategory, setSelectedCategory] = useState("All");
+      const [searchQuery, setSearchQuery] = useState("");
+      
+      // UI Modals
+      const [isCartOpen, setIsCartOpen] = useState(false);
+      const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
+      const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+      const [isEditMode, setIsEditMode] = useState(false); // Arpit's custom editor toggle
+      const [isAdminUnlocked, setIsAdminUnlocked] = useState(false); // password gate for edit mode
+      const [isAdminPasswordModalOpen, setIsAdminPasswordModalOpen] = useState(false);
+      const [adminPasswordInput, setAdminPasswordInput] = useState("");
+      const [adminPasswordError, setAdminPasswordError] = useState("");
+      const [detailProduct, setDetailProduct] = useState(null);
+      const [editingProduct, setEditingProduct] = useState(null); // Product modal editor
+      const [isAddProductModal, setIsAddProductModal] = useState(false);
+      const [isSendingOrder, setIsSendingOrder] = useState(false);
+      const [lastOrderId, setLastOrderId] = useState("");
+      
+      // Toast / Notification Message
+      const [toastMsg, setToastMsg] = useState("");
+
+      // Checkout State
+      const [checkoutStep, setCheckoutStep] = useState(1); // 1: Details, 2: Payment, 3: Confirmation
+      const [paymentMethod, setPaymentMethod] = useState('upi');
+      const [customerDetails, setCustomerDetails] = useState({
+        name: "", email: "", phone: "", address: "", city: "", state: "Himachal Pradesh", pincode: ""
+      });
+
+      // Save to localStorage whenever state changes
+      useEffect(() => {
+        localStorage.setItem('mt_products', JSON.stringify(products));
+      }, [products]);
+
+      useEffect(() => {
+        localStorage.setItem('mt_banner', JSON.stringify(banner));
+      }, [banner]);
+
+      useEffect(() => {
+        localStorage.setItem('mt_size_chart', JSON.stringify(sizeChart));
+      }, [sizeChart]);
+
+      useEffect(() => {
+        localStorage.setItem('mt_cart', JSON.stringify(cart));
+      }, [cart]);
+
+      // Show Toast Notification
+      const showNotification = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(""), 3500);
+      };
+
+      // Filtered products list
+      const filteredProducts = useMemo(() => {
+        return products.filter(p => {
+          const matchesCat = selectedCategory === "All" || p.category === selectedCategory;
+          const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                p.tag.toLowerCase().includes(searchQuery.toLowerCase());
+          return matchesCat && matchesSearch;
+        });
+      }, [products, selectedCategory, searchQuery]);
+
+      // Cart helper functions
+      const addToCart = (product) => {
+        setCart(prev => {
+          const exists = prev.find(item => item.id === product.id);
+          if (exists) {
+            return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+          }
+          return [...prev, { ...product, qty: 1 }];
+        });
+        showNotification(`Added "${product.name}" to cart`);
+      };
+
+      const removeFromCart = (id) => {
+        setCart(prev => prev.filter(item => item.id !== id));
+      };
+
+      const updateQty = (id, delta) => {
+        setCart(prev => prev.map(item => {
+          if (item.id === id) {
+            const newQty = item.qty + delta;
+            return newQty > 0 ? { ...item, qty: newQty } : item;
+          }
+          return item;
+        }));
+      };
+
+      const cartTotal = useMemo(() => {
+        return cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+      }, [cart]);
+
+      // Admin / Edit Functions
+      const handleSaveProduct = (productData) => {
+        if (productData.id) {
+          // Edit existing
+          setProducts(prev => prev.map(p => p.id === productData.id ? productData : p));
+          showNotification("Product updated successfully!");
+        } else {
+          // Create new
+          const newP = { ...productData, id: `mt-${Date.now().toString().slice(-4)}` };
+          setProducts(prev => [newP, ...prev]);
+          showNotification("New product added to store!");
+        }
+        setEditingProduct(null);
+        setIsAddProductModal(false);
+      };
+
+      const handleDeleteProduct = (id) => {
+        const product = products.find(p => p.id === id);
+        const confirmed = window.confirm(`Delete "${product ? product.name : 'this item'}"? This cannot be undone.`);
+        if (confirmed) {
+          setProducts(prev => prev.filter(p => p.id !== id));
+          showNotification("Product removed from inventory");
+          if (detailProduct && detailProduct.id === id) setDetailProduct(null);
+        }
+      };
+
+      const resetDefaultData = () => {
+        const confirmed = window.confirm("Reset the store to the default demo products? This will erase all your edits.");
+        if (!confirmed) return;
+        setProducts(INITIAL_PRODUCTS);
+        setBanner(INITIAL_BANNER);
+        setSizeChart(INITIAL_SIZE_CHART);
+        localStorage.removeItem('mt_products');
+        localStorage.removeItem('mt_banner');
+        localStorage.removeItem('mt_size_chart');
+        showNotification("Store reset to default original demo data!");
+      };
+
+      // Admin password gate — click toggle → if locked, ask for password; if unlocked, just flip edit mode
+      const handleToggleEditMode = () => {
+        if (isEditMode) {
+          setIsEditMode(false);
+          return;
+        }
+        if (isAdminUnlocked) {
+          setIsEditMode(true);
+          return;
+        }
+        setAdminPasswordInput("");
+        setAdminPasswordError("");
+        setIsAdminPasswordModalOpen(true);
+      };
+
+      const handleAdminPasswordSubmit = (e) => {
+        e.preventDefault();
+        if (adminPasswordInput === CONFIG.adminPassword) {
+          setIsAdminUnlocked(true);
+          setIsEditMode(true);
+          setIsAdminPasswordModalOpen(false);
+        } else {
+          setAdminPasswordError("Incorrect password. Try again.");
+        }
+      };
+
+      // Build the UPI deep-link used for both the QR code and the "Pay via UPI App" button
+      const buildUpiLink = (orderId, amount) => {
+        const params = new URLSearchParams({
+          pa: CONFIG.upiId,
+          pn: CONFIG.upiPayeeName,
+          am: String(amount),
+          cu: "INR",
+          tn: `Order ${orderId}`
+        });
+        return `upi://pay?${params.toString()}`;
+      };
+
+      // Send the order details to the store owner's email via EmailJS (no backend needed)
+      const sendOrderEmail = async (orderId) => {
+        if (!CONFIG.emailjs.publicKey || !CONFIG.emailjs.serviceId || !CONFIG.emailjs.templateId) {
+          return { sent: false, reason: "EmailJS not configured" };
+        }
+        const itemsSummary = cart.map(item => `${item.name} (x${item.qty}) — ₹${item.price * item.qty}`).join("\n");
+        try {
+          await emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, {
+            to_email: CONFIG.ownerEmail,
+            order_id: orderId,
+            customer_name: customerDetails.name,
+            customer_phone: customerDetails.phone,
+            customer_address: `${customerDetails.address}, ${customerDetails.city}, ${customerDetails.state} - ${customerDetails.pincode}`,
+            payment_method: paymentMethod.toUpperCase(),
+            items_summary: itemsSummary,
+            order_total: `₹${cartTotal}`
+          });
+          return { sent: true };
+        } catch (err) {
+          console.error("EmailJS send failed:", err);
+          return { sent: false, reason: err.message || "Unknown error" };
+        }
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col bg-brand-black noise-bg">
+
+          {}
+          {/* Top Bar for Arpit's Studio Customization Mode */}
+          <div className="bg-zinc-900 border-b border-zinc-800 text-xs py-2 px-4 flex flex-wrap justify-between items-center z-50">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="font-mono text-zinc-300 uppercase tracking-widest text-[11px]">
+                MAFIOSO STUDIO ENGINE v2.0 • GRAPHIC DESIGNER EDITION
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4 my-1 sm:my-0">
+              <button 
+                onClick={handleToggleEditMode} 
+                className={`px-3 py-1 rounded-full text-[11px] font-mono tracking-wider transition border ${
+                  isEditMode 
+                    ? 'bg-white text-black border-white font-bold shadow-[0_0_12px_rgba(255,255,255,0.4)]' 
+                    : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:border-zinc-500'
+                }`}
+              >
+                {isEditMode ? '⚡ ADMIN EDIT MODE: ACTIVE' : '✏️ TOGGLE EDIT MODE'}
+              </button>
+
+              {isEditMode && (
+                <button 
+                  onClick={resetDefaultData}
+                  className="text-zinc-400 hover:text-red-400 font-mono text-[11px] underline"
+                  title="Reset to default items"
+                >
+                  Reset Defaults
+                </button>
+              )}
+            </div>
+          </div>
+
+          {}
+          {/* Header Navigation */}
+          <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-zinc-800 transition-all">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+              
+              {/* Brand Logo with Himachali Line Accent */}
+              <a href="#" className="group flex flex-col">
+                <span className="font-serif text-2xl sm:text-3xl font-extrabold tracking-widest text-white group-hover:tracking-wider transition-all duration-300">
+                  MAFIOSO<span className="text-zinc-500 font-sans text-xs sm:text-sm font-light ml-2 uppercase tracking-normal">THRIFTS</span>
+                </span>
+                <span className="text-[9px] font-mono tracking-widest text-zinc-500 -mt-1 flex items-center gap-1">
+                  ▲ HIMACHAL HIGH-ALTITUDE STREETWEAR ▲
+                </span>
+              </a>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 sm:gap-6">
+                <button 
+                  onClick={() => setIsSizeChartOpen(true)}
+                  className="hidden md:flex items-center gap-1.5 text-xs font-mono tracking-wider text-zinc-400 hover:text-white transition uppercase border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+                  Size Guide
+                </button>
+
+                {isEditMode && (
+                  <button 
+                    onClick={() => setIsAddProductModal(true)}
+                    className="flex items-center gap-1 text-xs font-mono bg-white text-black font-bold px-3 py-1.5 rounded hover:bg-zinc-200 transition"
+                  >
+                    + Add Product
+                  </button>
+                )}
+
+                {/* Cart Toggle */}
+                <button 
+                  onClick={() => setIsCartOpen(true)}
+                  className="relative p-2 text-white hover:text-zinc-300 transition bg-zinc-900 rounded-full border border-zinc-800"
+                  aria-label="View Shopping Cart"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                  {cart.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center animate-bounce">
+                      {cart.reduce((a, b) => a + b.qty, 0)}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Himachali Geometric Border Design Accent */}
+            <div className="h-1 w-full bg-zinc-900 flex overflow-hidden opacity-40">
+              {Array.from({ length: 40 }).map((_, i) => (
+                <div key={i} className="flex-1 border-r border-zinc-700 transform rotate-45 scale-125"></div>
+              ))}
+            </div>
+          </header>
+
+          {}
+          {/* Main Hero Section */}
+          <section className="relative border-b border-zinc-800 overflow-hidden bg-gradient-to-b from-zinc-950 to-black py-16 sm:py-24 px-4 sm:px-6">
+            
+            {/* Background Himachali Mountain Motif Vector */}
+            <div className="absolute inset-0 opacity-5 pointer-events-none flex items-end justify-center">
+              <svg className="w-full h-64 text-white" fill="currentColor" viewBox="0 0 1200 300" preserveAspectRatio="none">
+                <path d="M0,300 L150,120 L300,280 L450,80 L600,290 L800,40 L1000,270 L1200,100 L1200,300 Z" />
+              </svg>
+            </div>
+
+            <div className="max-w-5xl mx-auto text-center relative z-10">
+              
+              <div className="inline-block mb-4 px-3 py-1 border border-zinc-700 rounded-full text-[11px] font-mono uppercase tracking-widest text-zinc-400 bg-black/60">
+                🏔️ Designed & Curated by Arpit • Kasol & Shimla Studio
+              </div>
+
+              {isEditMode ? (
+                <div className="bg-zinc-900/90 p-4 rounded-xl border border-dashed border-zinc-600 mb-6 text-left">
+                  <label className="text-xs font-mono text-zinc-400 block mb-1">Edit Main Headline:</label>
+                  <input 
+                    type="text" 
+                    value={banner.heroTitle} 
+                    onChange={e => setBanner({ ...banner, heroTitle: e.target.value })}
+                    className="w-full bg-black border border-zinc-700 rounded p-2 text-white font-serif text-xl mb-3"
+                  />
+                  <label className="text-xs font-mono text-zinc-400 block mb-1">Edit Hero Subtitle:</label>
+                  <textarea 
+                    value={banner.heroSubtitle} 
+                    onChange={e => setBanner({ ...banner, heroSubtitle: e.target.value })}
+                    className="w-full bg-black border border-zinc-700 rounded p-2 text-white text-sm"
+                    rows="2"
+                  />
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-3xl sm:text-6xl font-serif font-black tracking-tight text-white mb-6 leading-tight uppercase">
+                    {banner.heroTitle}
+                  </h1>
+                  <p className="max-w-2xl mx-auto text-zinc-400 text-sm sm:text-base font-light mb-8 leading-relaxed">
+                    {banner.heroSubtitle}
+                  </p>
+                </>
+              )}
+
+              <div className="flex flex-wrap justify-center gap-4 text-xs font-mono">
+                <a 
+                  href="#catalog" 
+                  className="bg-white text-black px-6 py-3 rounded uppercase font-bold tracking-wider hover:bg-zinc-200 transition shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                >
+                  Explore Collection
+                </a>
+                <button 
+                  onClick={() => setIsSizeChartOpen(true)}
+                  className="border border-zinc-700 hover:border-zinc-400 px-6 py-3 rounded uppercase tracking-wider text-zinc-300 transition"
+                >
+                  Size Guide & Fit Info
+                </button>
+              </div>
+
+            </div>
+          </section>
+
+          {}
+          <section className="bg-zinc-950 py-8 border-b border-zinc-800/80 px-4">
+            <div className="max-w-6xl mx-auto border border-zinc-800 rounded-xl p-6 sm:p-8 bg-black/60 relative overflow-hidden">
+              
+              {/* Minimal Geometric Pahadi Accent Line */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-500 to-transparent"></div>
+
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="space-y-2 max-w-3xl">
+                  <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase flex items-center gap-2">
+                    <span className="text-white">◆</span> HIMACHALI THRIFT CULT CULTURE
+                  </span>
+                  {isEditMode ? (
+                    <div className="space-y-2 mt-2">
+                      <input 
+                        type="text" 
+                        value={banner.cultureStoryTitle}
+                        onChange={e => setBanner({ ...banner, cultureStoryTitle: e.target.value })}
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-white font-serif text-sm"
+                      />
+                      <textarea 
+                        value={banner.cultureStoryText}
+                        onChange={e => setBanner({ ...banner, cultureStoryText: e.target.value })}
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-white text-xs"
+                        rows="3"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-base sm:text-lg font-serif font-bold tracking-wide text-zinc-100">
+                        {banner.cultureStoryTitle}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed">
+                        {banner.cultureStoryText}
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex-shrink-0 border-t md:border-t-0 md:border-l border-zinc-800 pt-4 md:pt-0 md:pl-6 text-center md:text-right">
+                  <div className="text-xl font-serif font-bold text-white">100% ARTISTIC</div>
+                  <div className="text-[11px] font-mono text-zinc-500 uppercase">1-of-1 Handpicked Garments</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {}
+          <main id="catalog" className="max-w-7xl mx-auto px-4 sm:px-6 py-12 flex-grow w-full">
+            
+            {/* Filter & Search Bar */}
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-8 border-b border-zinc-800 pb-6">
+              
+              {/* Category Pills */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+                {["All", "Outerwear", "Tops", "Artistic Upcycled", "Bottoms"].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-4 py-2 rounded-full text-xs font-mono uppercase tracking-wider whitespace-nowrap transition border ${
+                      selectedCategory === cat 
+                        ? 'bg-white text-black border-white font-bold' 
+                        : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search Box */}
+              <div className="relative min-w-[240px]">
+                <input 
+                  type="text" 
+                  placeholder="Search products, styles, sizes..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-zinc-900 text-white placeholder-zinc-500 text-xs font-mono rounded-lg px-4 py-2.5 pl-9 border border-zinc-800 focus:outline-none focus:border-white transition"
+                />
+                <svg className="w-4 h-4 text-zinc-500 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </div>
+
+            </div>
+
+            {/* Product Grid */}
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-20 border border-dashed border-zinc-800 rounded-xl">
+                <p className="text-zinc-500 font-mono text-sm">No garments found matching your criteria.</p>
+                <button 
+                  onClick={() => { setSelectedCategory("All"); setSearchQuery(""); }}
+                  className="mt-4 text-xs font-mono text-white underline hover:text-zinc-300"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                {filteredProducts.map((p) => (
+                  <div 
+                    key={p.id}
+                    className="group bg-brand-card border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-500 transition duration-300 flex flex-col relative"
+                  >
+                    
+                    {}
+                    {/* Badge */}
+                    <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+                      <span className="bg-black/80 backdrop-blur-md text-white text-[10px] font-mono font-bold px-2.5 py-1 rounded border border-zinc-700 tracking-widest uppercase">
+                        {p.tag}
+                      </span>
+                    </div>
+
+                    {/* Admin Direct Action Buttons on Card */}
+                    {isEditMode && (
+                      <div className="absolute top-3 right-3 z-20 flex gap-2">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }}
+                          className="bg-white text-black p-1.5 rounded text-xs font-mono hover:bg-zinc-200 shadow"
+                          title="Edit this item"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleDeleteProduct(p.id); }}
+                          className="bg-red-600 text-white p-1.5 rounded text-xs font-mono hover:bg-red-700 shadow"
+                          title="Delete item"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Image Container */}
+                    <div 
+                      onClick={() => setDetailProduct(p)}
+                      className="aspect-[4/5] bg-zinc-900 overflow-hidden cursor-pointer relative"
+                    >
+                      <img 
+                        src={p.image} 
+                        alt={p.name}
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 opacity-90 group-hover:opacity-100"
+                        onError={(e) => {
+                          e.target.src = "https://placehold.co/600x750/18181b/ffffff?text=MAFIOSO+THRIFTS";
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-4">
+                        <span className="text-xs font-mono text-white underline">Quick Inspect Item →</span>
+                      </div>
+                    </div>
+
+                    {/* Info Body */}
+                    <div className="p-5 flex flex-col flex-grow justify-between border-t border-zinc-800/80 bg-zinc-950/60">
+                      <div>
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">{p.category} • {p.size}</span>
+                          <span className="text-xs font-mono text-zinc-500">{p.condition}</span>
+                        </div>
+                        <h3 
+                          onClick={() => setDetailProduct(p)}
+                          className="font-serif font-bold text-base text-white hover:text-zinc-300 cursor-pointer transition line-clamp-1 uppercase tracking-wide"
+                        >
+                          {p.name}
+                        </h3>
+                        <p className="text-xs text-zinc-400 font-light mt-2 line-clamp-2 leading-relaxed">
+                          {p.description}
+                        </p>
+                      </div>
+
+                      {/* Cultural snippet tag */}
+                      {p.cultureNote && (
+                        <div className="mt-3 pt-2 border-t border-zinc-800/50 text-[11px] font-mono text-zinc-500 italic flex items-center gap-1">
+                          <span>🏔️</span> {p.cultureNote}
+                        </div>
+                      )}
+
+                      {/* Price & Action */}
+                      <div className="mt-4 pt-3 border-t border-zinc-800 flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-zinc-500 font-mono block">PRICE</span>
+                          <span className="text-lg font-mono font-bold text-white">₹{p.price}</span>
+                        </div>
+
+                        <button 
+                          onClick={() => addToCart(p)}
+                          className="bg-white text-black hover:bg-zinc-200 text-xs font-mono font-bold uppercase tracking-wider px-4 py-2 rounded transition flex items-center gap-2"
+                        >
+                          + Add to Cart
+                        </button>
+                      </div>
+
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </main>
+
+          {}
+          {/* Size Chart Modal */}
+          {isSizeChartOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+              <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 relative">
+                
+                <button 
+                  onClick={() => setIsSizeChartOpen(false)}
+                  className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2"
+                >
+                  ✕
+                </button>
+
+                <div className="mb-6">
+                  <span className="text-xs font-mono text-zinc-400 tracking-widest uppercase">MAFIOSO FIT GUIDE</span>
+                  <h2 className="text-2xl font-serif font-bold text-white mt-1">Oversized & Vintage Size Chart</h2>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Most thrift & artistic garments feature modern street drape with dropped shoulders.
+                  </p>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs font-mono border-collapse">
+                    <thead>
+                      <tr className="border-b border-zinc-700 text-zinc-400 uppercase">
+                        <th className="p-3">Size</th>
+                        <th className="p-3">Chest (Inches)</th>
+                        <th className="p-3">Length (Inches)</th>
+                        <th className="p-3">Shoulder</th>
+                        <th className="p-3">Fit Profile</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800 text-zinc-200">
+                      {sizeChart.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-zinc-800/50">
+                          <td className="p-3 font-bold text-white">{row.size}</td>
+                          <td className="p-3">{row.chest}</td>
+                          <td className="p-3">{row.length}</td>
+                          <td className="p-3">{row.shoulder}</td>
+                          <td className="p-3 text-zinc-400">{row.fit}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-6 p-4 bg-black border border-zinc-800 rounded-lg text-xs font-mono text-zinc-400 space-y-2">
+                  <p className="font-bold text-white uppercase">💡 Thrift Sizing Tip by Arpit:</p>
+                  <p>
+                    Since thrifted items originate from distinct eras and global regions, we provide measured dimensions on each product page rather than relying on tag sizes. Compare chest & length against your best-fitting tee or jacket!
+                  </p>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button 
+                    onClick={() => setIsSizeChartOpen(false)}
+                    className="bg-white text-black px-5 py-2 text-xs font-mono font-bold rounded uppercase hover:bg-zinc-200"
+                  >
+                    Got It
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {}
+          {/* Detailed Product Modal */}
+          {detailProduct && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 relative">
+                
+                <button 
+                  onClick={() => setDetailProduct(null)}
+                  className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2 rounded-full bg-zinc-900 border border-zinc-800"
+                >
+                  ✕
+                </button>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  
+                  {/* Image */}
+                  <div className="aspect-[4/5] bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800">
+                    <img 
+                      src={detailProduct.image} 
+                      alt={detailProduct.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex flex-col justify-between space-y-6">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2.5 py-0.5 rounded bg-zinc-800 text-[10px] font-mono text-zinc-300 uppercase tracking-widest">
+                          {detailProduct.category}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded bg-white text-black text-[10px] font-mono font-bold uppercase tracking-widest">
+                          {detailProduct.tag}
+                        </span>
+                      </div>
+
+                      <h2 className="text-2xl font-serif font-black uppercase text-white tracking-wide">
+                        {detailProduct.name}
+                      </h2>
+
+                      <div className="text-2xl font-mono font-bold text-white mt-3">
+                        ₹{detailProduct.price}
+                      </div>
+
+                      {/* Details Box */}
+                      <div className="mt-6 space-y-3 font-mono text-xs border-y border-zinc-800 py-4">
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">SIZE FIT:</span>
+                          <span className="text-white font-bold">{detailProduct.size}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">CONDITION:</span>
+                          <span className="text-white">{detailProduct.condition}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">AVAILABILITY:</span>
+                          <span className="text-emerald-400">1-of-1 In Stock (Himachal Studio)</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <h4 className="text-xs font-mono text-zinc-400 uppercase mb-1">Description:</h4>
+                        <p className="text-xs text-zinc-300 leading-relaxed font-light">
+                          {detailProduct.description}
+                        </p>
+                      </div>
+
+                      {detailProduct.cultureNote && (
+                        <div className="mt-4 p-3 bg-zinc-900 border border-zinc-800 rounded text-xs font-mono text-zinc-400">
+                          <span className="text-white font-bold block mb-1">🏔️ HIMACHAL CULTURAL VIBE:</span>
+                          {detailProduct.cultureNote}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t border-zinc-800">
+                      <button 
+                        onClick={() => {
+                          addToCart(detailProduct);
+                          setDetailProduct(null);
+                        }}
+                        className="w-full bg-white text-black hover:bg-zinc-200 font-mono font-bold text-xs uppercase tracking-widest py-3.5 rounded transition"
+                      >
+                        Add Garment To Cart — ₹{detailProduct.price}
+                      </button>
+
+                      <button 
+                        onClick={() => setIsSizeChartOpen(true)}
+                        className="w-full text-center text-xs font-mono text-zinc-400 hover:text-white underline"
+                      >
+                        Check Sizing Measurements Guide
+                      </button>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {}
+          {/* Cart Drawer */}
+          {isCartOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm animate-fade-in">
+              <div className="bg-zinc-950 border-l border-zinc-800 w-full max-w-md h-full flex flex-col justify-between p-6 relative">
+                
+                <div>
+                  {/* Cart Header */}
+                  <div className="flex justify-between items-center pb-4 border-b border-zinc-800">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-serif font-bold text-white">YOUR BAG</span>
+                      <span className="text-xs font-mono text-zinc-500">({cart.length} items)</span>
+                    </div>
+                    <button 
+                      onClick={() => setIsCartOpen(false)}
+                      className="text-zinc-400 hover:text-white p-2"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Cart Items List */}
+                  {cart.length === 0 ? (
+                    <div className="py-20 text-center space-y-4">
+                      <p className="font-mono text-xs text-zinc-500">Your bag is currently empty.</p>
+                      <button 
+                        onClick={() => setIsCartOpen(false)}
+                        className="text-xs font-mono uppercase bg-zinc-900 border border-zinc-800 text-white px-4 py-2 rounded hover:border-zinc-600"
+                      >
+                        Browse Himalayan Inventory
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-zinc-800 max-h-[60vh] overflow-y-auto my-4 pr-1">
+                      {cart.map(item => (
+                        <div key={item.id} className="py-4 flex gap-4 items-center">
+                          <img src={item.image} alt={item.name} className="w-16 h-20 object-cover rounded bg-zinc-900 border border-zinc-800" />
+                          <div className="flex-grow">
+                            <h4 className="text-xs font-serif font-bold text-white line-clamp-1">{item.name}</h4>
+                            <span className="text-[10px] font-mono text-zinc-500">{item.size} • ₹{item.price}</span>
+                            
+                            {/* Qty Controls */}
+                            <div className="flex items-center gap-3 mt-2">
+                              <button onClick={() => updateQty(item.id, -1)} className="w-5 h-5 rounded bg-zinc-900 border border-zinc-800 text-xs font-mono hover:bg-zinc-800 flex items-center justify-center">-</button>
+                              <span className="text-xs font-mono font-bold text-white">{item.qty}</span>
+                              <button onClick={() => updateQty(item.id, 1)} className="w-5 h-5 rounded bg-zinc-900 border border-zinc-800 text-xs font-mono hover:bg-zinc-800 flex items-center justify-center">+</button>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-xs font-mono font-bold text-white block">₹{item.price * item.qty}</span>
+                            <button onClick={() => removeFromCart(item.id)} className="text-[10px] font-mono text-red-400 hover:underline mt-1">Remove</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Cart Footer */}
+                {cart.length > 0 && (
+                  <div className="border-t border-zinc-800 pt-4 space-y-4">
+                    <div className="space-y-1.5 font-mono text-xs">
+                      <div className="flex justify-between text-zinc-400">
+                        <span>Subtotal:</span>
+                        <span>₹{cartTotal}</span>
+                      </div>
+                      <div className="flex justify-between text-zinc-400">
+                        <span>Shipping (All India):</span>
+                        <span className="text-emerald-400 font-bold">FREE</span>
+                      </div>
+                      <div className="flex justify-between text-white font-bold text-sm pt-2 border-t border-zinc-800">
+                        <span>Grand Total:</span>
+                        <span>₹{cartTotal}</span>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => {
+                        setIsCartOpen(false);
+                        setIsCheckoutOpen(true);
+                      }}
+                      className="w-full bg-white text-black font-mono font-bold text-xs uppercase tracking-widest py-3.5 rounded hover:bg-zinc-200 transition"
+                    >
+                      Proceed to Checkout →
+                    </button>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          )}
+
+          {}
+          {/* Checkout & Payment Simulator Modal */}
+          {isCheckoutOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl p-6 sm:p-8 relative">
+                
+                <button 
+                  onClick={() => setIsCheckoutOpen(false)}
+                  className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2"
+                >
+                  ✕
+                </button>
+
+                {/* Steps Header */}
+                <div className="flex items-center gap-2 mb-6 border-b border-zinc-800 pb-4">
+                  <span className={`text-xs font-mono px-3 py-1 rounded ${checkoutStep === 1 ? 'bg-white text-black font-bold' : 'bg-zinc-900 text-zinc-500'}`}>1. Shipping</span>
+                  <span className="text-zinc-600">→</span>
+                  <span className={`text-xs font-mono px-3 py-1 rounded ${checkoutStep === 2 ? 'bg-white text-black font-bold' : 'bg-zinc-900 text-zinc-500'}`}>2. Payment Options</span>
+                  <span className="text-zinc-600">→</span>
+                  <span className={`text-xs font-mono px-3 py-1 rounded ${checkoutStep === 3 ? 'bg-emerald-500 text-black font-bold' : 'bg-zinc-900 text-zinc-500'}`}>3. Confirmation</span>
+                </div>
+
+                {/* STEP 1: Shipping Details */}
+                {checkoutStep === 1 && (
+                  <form onSubmit={(e) => { e.preventDefault(); setCheckoutStep(2); }} className="space-y-4">
+                    <h3 className="text-lg font-serif font-bold text-white uppercase">Shipping Address</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                      <div>
+                        <label className="text-zinc-400 block mb-1">Full Name *</label>
+                        <input 
+                          required 
+                          type="text" 
+                          value={customerDetails.name}
+                          onChange={e => setCustomerDetails({ ...customerDetails, name: e.target.value })}
+                          placeholder="Arpit Sharma" 
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white focus:border-white outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-zinc-400 block mb-1">Phone Number *</label>
+                        <input 
+                          required 
+                          type="tel" 
+                          value={customerDetails.phone}
+                          onChange={e => setCustomerDetails({ ...customerDetails, phone: e.target.value })}
+                          placeholder="+91 98765 43210" 
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white focus:border-white outline-none"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-zinc-400 block mb-1">Street Address *</label>
+                        <input 
+                          required 
+                          type="text" 
+                          value={customerDetails.address}
+                          onChange={e => setCustomerDetails({ ...customerDetails, address: e.target.value })}
+                          placeholder="House No, Street, Landmark" 
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white focus:border-white outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-zinc-400 block mb-1">City *</label>
+                        <input 
+                          required 
+                          type="text" 
+                          value={customerDetails.city}
+                          onChange={e => setCustomerDetails({ ...customerDetails, city: e.target.value })}
+                          placeholder="Shimla / Kasol / Delhi" 
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white focus:border-white outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-zinc-400 block mb-1">Pincode *</label>
+                        <input 
+                          required 
+                          type="text" 
+                          value={customerDetails.pincode}
+                          onChange={e => setCustomerDetails({ ...customerDetails, pincode: e.target.value })}
+                          placeholder="171001" 
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white focus:border-white outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 flex justify-between items-center border-t border-zinc-800">
+                      <span className="font-mono text-xs text-zinc-400">Total: <strong className="text-white">₹{cartTotal}</strong></span>
+                      <button 
+                        type="submit" 
+                        className="bg-white text-black font-mono font-bold text-xs uppercase px-6 py-3 rounded hover:bg-zinc-200"
+                      >
+                        Continue to Payment →
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* STEP 2: Payment Selector */}
+                {checkoutStep === 2 && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-serif font-bold text-white uppercase">Choose Payment Option</h3>
+
+                    <div className="space-y-3 font-mono text-xs">
+                      
+                      {/* UPI Payment */}
+                      <label 
+                        onClick={() => setPaymentMethod('upi')}
+                        className={`block p-4 rounded-xl border cursor-pointer transition ${paymentMethod === 'upi' ? 'bg-zinc-900 border-white' : 'bg-black border-zinc-800 hover:border-zinc-700'}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <input type="radio" checked={paymentMethod === 'upi'} readOnly />
+                            <div>
+                              <span className="font-bold text-white block">UPI / GooglePay / PhonePe / Paytm</span>
+                              <span className="text-[11px] text-zinc-400">Instant verification via QR or VPA Handle</span>
+                            </div>
+                          </div>
+                          <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">RECOMMENDED</span>
+                        </div>
+
+                        {paymentMethod === 'upi' && (
+                          <div className="mt-4 pt-4 border-t border-zinc-800 flex flex-col sm:flex-row items-center gap-4 bg-black p-3 rounded">
+                            {/* Real scannable UPI QR code, generated from the actual payment link */}
+                            <div className="w-32 h-32 bg-white p-2 rounded flex-shrink-0">
+                              <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(buildUpiLink('PENDING', cartTotal))}`}
+                                alt="UPI payment QR code"
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                            <div className="text-left space-y-2 flex-grow">
+                              <span className="text-zinc-400 text-[11px] block">Pay ₹{cartTotal} directly to:</span>
+                              <code className="text-white bg-zinc-900 px-2 py-1 rounded text-xs border border-zinc-800 block w-fit font-bold">
+                                {CONFIG.upiId}
+                              </code>
+                              <p className="text-[10px] text-zinc-500 leading-tight">
+                                Scan the QR with any UPI app, or on mobile tap below to open your UPI app directly.
+                              </p>
+                              <a 
+                                href={buildUpiLink('PENDING', cartTotal)}
+                                className="inline-block mt-1 bg-emerald-500 text-black text-[11px] font-bold font-mono px-3 py-1.5 rounded hover:bg-emerald-400 transition"
+                              >
+                                📱 Pay via UPI App
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </label>
+
+                      {/* Card Payment */}
+                      <label 
+                        onClick={() => setPaymentMethod('card')}
+                        className={`block p-4 rounded-xl border cursor-pointer transition ${paymentMethod === 'card' ? 'bg-zinc-900 border-white' : 'bg-black border-zinc-800 hover:border-zinc-700'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input type="radio" checked={paymentMethod === 'card'} readOnly />
+                          <div>
+                            <span className="font-bold text-white block">Credit / Debit Card</span>
+                            <span className="text-[11px] text-zinc-400">Visa, Mastercard, RuPay</span>
+                          </div>
+                        </div>
+                      </label>
+
+                      {/* COD Option */}
+                      <label 
+                        onClick={() => setPaymentMethod('cod')}
+                        className={`block p-4 rounded-xl border cursor-pointer transition ${paymentMethod === 'cod' ? 'bg-zinc-900 border-white' : 'bg-black border-zinc-800 hover:border-zinc-700'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input type="radio" checked={paymentMethod === 'cod'} readOnly />
+                          <div>
+                            <span className="font-bold text-white block">Cash on Delivery (COD)</span>
+                            <span className="text-[11px] text-zinc-400">Pay cash upon delivery at your doorstep</span>
+                          </div>
+                        </div>
+                      </label>
+
+                    </div>
+
+                    <div className="pt-4 flex justify-between items-center border-t border-zinc-800">
+                      <button 
+                        onClick={() => setCheckoutStep(1)} 
+                        className="text-xs font-mono text-zinc-400 hover:text-white"
+                      >
+                        ← Back to Shipping
+                      </button>
+
+                      <button 
+                        disabled={isSendingOrder}
+                        onClick={async () => {
+                          setIsSendingOrder(true);
+                          const orderId = `MT-${Math.floor(100000 + Math.random() * 900000)}`;
+                          const result = await sendOrderEmail(orderId);
+                          setIsSendingOrder(false);
+                          setLastOrderId(orderId);
+                          setCheckoutStep(3);
+                          setCart([]);
+                          if (result.sent) {
+                            showNotification("Order placed — confirmation emailed!");
+                          } else {
+                            console.error("Order email failed:", result.reason);
+                            showNotification(`Order placed! (Email failed: ${result.reason || 'not configured'})`);
+                          }
+                        }} 
+                        className="bg-emerald-500 text-black font-mono font-bold text-xs uppercase px-6 py-3 rounded hover:bg-emerald-400 transition shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-wait"
+                      >
+                        {isSendingOrder ? 'Placing Order...' : `Confirm & Place Order (₹${cartTotal})`}
+                      </button>
+                    </div>
+
+                  </div>
+                )}
+
+                {/* STEP 3: Order Confirmation */}
+                {checkoutStep === 3 && (
+                  <div className="text-center py-8 space-y-4 font-mono">
+                    <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-2xl">
+                      ✓
+                    </div>
+
+                    <h3 className="text-2xl font-serif font-bold text-white">ORDER CONFIRMED</h3>
+                    <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                      Thank you for supporting Himalayan upcycled streetwear! Your order <strong className="text-white">#{lastOrderId}</strong> has been received by Arpit.
+                    </p>
+
+                    <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-lg max-w-md mx-auto text-left text-xs space-y-1">
+                      <div className="text-zinc-500">Deliver To: <span className="text-white">{customerDetails.name}</span></div>
+                      <div className="text-zinc-500">Address: <span className="text-white">{customerDetails.address}, {customerDetails.city}</span></div>
+                      <div className="text-zinc-500">Payment Method: <span className="text-white uppercase">{paymentMethod}</span></div>
+                    </div>
+
+                    <div className="pt-4">
+                      <button 
+                        onClick={() => {
+                          setIsCheckoutOpen(false);
+                          setCheckoutStep(1);
+                        }}
+                        className="bg-white text-black font-mono font-bold text-xs uppercase px-8 py-3 rounded hover:bg-zinc-200"
+                      >
+                        Back To Shop
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          )}
+
+          {}
+          {/* Admin Add / Edit Product Modal */}
+          {(editingProduct || isAddProductModal) && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+              <div className="bg-zinc-950 border border-zinc-700 rounded-2xl w-full max-w-xl p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto">
+                
+                <button 
+                  onClick={() => { setEditingProduct(null); setIsAddProductModal(false); }}
+                  className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2"
+                >
+                  ✕
+                </button>
+
+                <h3 className="text-xl font-serif font-bold text-white mb-4">
+                  {editingProduct ? 'EDIT INVENTORY ITEM' : 'ADD NEW GARMENT'}
+                </h3>
+
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.target);
+                  handleSaveProduct({
+                    id: editingProduct ? editingProduct.id : null,
+                    name: formData.get('name'),
+                    category: formData.get('category'),
+                    price: Number(formData.get('price')),
+                    size: formData.get('size'),
+                    condition: formData.get('condition'),
+                    tag: formData.get('tag'),
+                    image: formData.get('image'),
+                    description: formData.get('description'),
+                    cultureNote: formData.get('cultureNote')
+                  });
+                }} className="space-y-4 text-xs font-mono">
+
+                  <div>
+                    <label className="text-zinc-400 block mb-1">Item Title / Name *</label>
+                    <input 
+                      required 
+                      type="text" 
+                      name="name" 
+                      defaultValue={editingProduct?.name || ''}
+                      placeholder="e.g. KASOL VINTAGE FLANNEL"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-zinc-400 block mb-1">Category *</label>
+                      <select 
+                        name="category" 
+                        defaultValue={editingProduct?.category || 'Outerwear'}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white"
+                      >
+                        <option value="Outerwear">Outerwear</option>
+                        <option value="Tops">Tops</option>
+                        <option value="Artistic Upcycled">Artistic Upcycled</option>
+                        <option value="Bottoms">Bottoms</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-zinc-400 block mb-1">Price (₹ INR) *</label>
+                      <input 
+                        required 
+                        type="number" 
+                        name="price" 
+                        defaultValue={editingProduct?.price || 1990}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-zinc-400 block mb-1">Size Fit *</label>
+                      <input 
+                        required 
+                        type="text" 
+                        name="size" 
+                        defaultValue={editingProduct?.size || 'L (Oversized)'}
+                        placeholder="e.g. L / XL"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-zinc-400 block mb-1">Tag / Badge</label>
+                      <input 
+                        type="text" 
+                        name="tag" 
+                        defaultValue={editingProduct?.tag || '1-OF-1 RARE'}
+                        placeholder="e.g. 1-OF-1 ARCHIVE"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-zinc-400 block mb-1">Condition Rating</label>
+                    <input 
+                      type="text" 
+                      name="condition" 
+                      defaultValue={editingProduct?.condition || '9.5/10 — Mint Vintage'}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-zinc-400 block mb-1">Image URL *</label>
+                    <input 
+                      required 
+                      type="url" 
+                      name="image" 
+                      defaultValue={editingProduct?.image || 'https://images.unsplash.com/photo-1578932750294-f5075e85f44a?q=80&w=800&auto=format&fit=crop'}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-zinc-400 block mb-1">Garment Description</label>
+                    <textarea 
+                      name="description" 
+                      rows="3" 
+                      defaultValue={editingProduct?.description || ''}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label className="text-zinc-400 block mb-1">Himachal Cultural Note (Optional)</label>
+                    <input 
+                      type="text" 
+                      name="cultureNote" 
+                      defaultValue={editingProduct?.cultureNote || ''}
+                      placeholder="e.g. Sourced from Kasol market, Parvati Valley"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div className="pt-4 flex justify-end gap-3">
+                    <button 
+                      type="button" 
+                      onClick={() => { setEditingProduct(null); setIsAddProductModal(false); }}
+                      className="px-4 py-2 rounded border border-zinc-800 text-zinc-400 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="bg-white text-black font-bold px-6 py-2 rounded hover:bg-zinc-200"
+                    >
+                      Save Inventory
+                    </button>
+                  </div>
+
+                </form>
+
+              </div>
+            </div>
+          )}
+
+          {}
+          {/* Admin Password Modal */}
+          {isAdminPasswordModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+              <div className="bg-zinc-950 border border-zinc-700 rounded-2xl w-full max-w-sm p-6 relative">
+                <button 
+                  onClick={() => setIsAdminPasswordModalOpen(false)}
+                  className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2"
+                >
+                  ✕
+                </button>
+                <h3 className="text-lg font-serif font-bold text-white mb-1">Admin Access</h3>
+                <p className="text-xs text-zinc-400 mb-4 font-mono">Enter the store password to edit inventory.</p>
+                <form onSubmit={handleAdminPasswordSubmit} className="space-y-3">
+                  <input 
+                    type="password"
+                    autoFocus
+                    value={adminPasswordInput}
+                    onChange={e => setAdminPasswordInput(e.target.value)}
+                    placeholder="Password"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-white text-xs font-mono focus:border-white outline-none"
+                  />
+                  {adminPasswordError && (
+                    <p className="text-xs font-mono text-red-400">{adminPasswordError}</p>
+                  )}
+                  <button 
+                    type="submit"
+                    className="w-full bg-white text-black font-mono font-bold text-xs uppercase tracking-widest py-3 rounded hover:bg-zinc-200 transition"
+                  >
+                    Unlock
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {}
+          {toastMsg && (
+            <div className="fixed bottom-6 right-6 z-50 bg-white text-black font-mono text-xs px-5 py-3 rounded-lg shadow-2xl border border-zinc-300 flex items-center gap-2 animate-bounce">
+              <span>✦</span> {toastMsg}
+            </div>
+          )}
+
+          {}
+          {/* Minimal Artistic Footer */}
+          <footer className="border-t border-zinc-900 bg-black text-zinc-500 py-12 px-4 sm:px-6 font-mono text-xs">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+              
+              <div className="text-center md:text-left space-y-1">
+                <span className="font-serif text-lg font-bold text-white tracking-widest block">MAFIOSO THRIFTS</span>
+                <p className="text-[11px] text-zinc-600">Designed & Curated by Arpit • Himachal Pradesh, India</p>
+              </div>
+
+              {/* Pahadi Line Art Symbol */}
+              <div className="text-center opacity-30 text-xs tracking-widest text-zinc-400">
+                ▲▲▲ PARVATI VALLEY • SHIMLA • KASOL ▲▲▲
+              </div>
+
+              <div className="flex items-center gap-6 text-[11px]">
+                <button onClick={() => setIsSizeChartOpen(true)} className="hover:text-white transition">Size Guide</button>
+                <a href="#catalog" className="hover:text-white transition">Collection</a>
+                <span className="text-zinc-700">|</span>
+                <span className="text-zinc-600">© 2026 Mafioso Studio</span>
+              </div>
+
+            </div>
+          </footer>
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
